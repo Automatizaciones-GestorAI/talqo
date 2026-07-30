@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { anthropic, MODEL_CONVERSACION, MODEL_ANALISIS } from "@/lib/anthropic";
 import { promptViaRapida, promptViaAnalisis, PerfilAlumno } from "@/lib/prompts";
+import { construirPerfilAlumno, registrarErrorSiAplica, registrarVocabularioSiAplica } from "@/lib/perfiles";
 
 export const runtime = "nodejs";
 
@@ -87,17 +88,18 @@ export async function POST(req: NextRequest) {
     const form = await req.formData();
     const audioFile = form.get("audio") as File | null;
     const textoDirecto = form.get("textoDirecto") as string | null;
-    const perfilRaw = form.get("perfil") as string | null;
-    const voiceId = (form.get("voiceId") as string) || (process.env.ELEVENLABS_VOICE_ID_DEFAULT as string);
+    const perfilId = form.get("perfilId") as string | null;
+    const voiceIdManual = form.get("voiceId") as string | null;
 
-    if ((!audioFile && !textoDirecto) || !perfilRaw) {
+    if ((!audioFile && !textoDirecto) || !perfilId) {
       return NextResponse.json(
-        { error: "Falta 'audio' o 'textoDirecto', y 'perfil' es obligatorio en el form-data." },
+        { error: "Falta 'audio' o 'textoDirecto', y 'perfilId' es obligatorio en el form-data." },
         { status: 400 }
       );
     }
 
-    const perfil: PerfilAlumno = JSON.parse(perfilRaw);
+    const perfil = await construirPerfilAlumno(perfilId);
+    const voiceId = voiceIdManual || (process.env.ELEVENLABS_VOICE_ID_DEFAULT as string);
     const idiomaHablado = (form.get("idiomaHablado") as string) || undefined;
 
     const transcript = textoDirecto ? textoDirecto : await transcribirAudio(audioFile as File, idiomaHablado);
@@ -108,6 +110,16 @@ export async function POST(req: NextRequest) {
     ]);
 
     const audioBase64 = await generarAudio(respuestaTexto, voiceId);
+
+    await Promise.all([
+      registrarErrorSiAplica(perfilId, analisis?.correccion?.categoria_error),
+      registrarVocabularioSiAplica(
+        perfilId,
+        analisis?.palabra_nueva?.palabra,
+        analisis?.palabra_nueva?.ipa,
+        analisis?.palabra_nueva?.traduccion
+      ),
+    ]);
 
     return NextResponse.json({
       transcript,
