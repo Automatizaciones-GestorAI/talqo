@@ -4,10 +4,13 @@ import { promptViaRapida, promptViaAnalisis, PerfilAlumno } from "@/lib/prompts"
 
 export const runtime = "nodejs";
 
-async function transcribirAudio(audioFile: File): Promise<string> {
+async function transcribirAudio(audioFile: File, idiomaHablado?: string): Promise<string> {
   const form = new FormData();
   form.append("file", audioFile, "turno.webm");
   form.append("model", "whisper-1");
+  if (idiomaHablado) {
+    form.append("language", idiomaHablado);
+  }
 
   const resp = await fetch("https://api.openai.com/v1/audio/transcriptions", {
     method: "POST",
@@ -74,7 +77,7 @@ export async function POST(req: NextRequest) {
   try {
     const form = await req.formData();
     const audioFile = form.get("audio") as File | null;
-    const textoDirecto = form.get("textoDirecto") as string | null; // modo de prueba, sin Whisper
+    const textoDirecto = form.get("textoDirecto") as string | null;
     const perfilRaw = form.get("perfil") as string | null;
     const voiceId = (form.get("voiceId") as string) || (process.env.ELEVENLABS_VOICE_ID_DEFAULT as string);
 
@@ -86,8 +89,9 @@ export async function POST(req: NextRequest) {
     }
 
     const perfil: PerfilAlumno = JSON.parse(perfilRaw);
+    const idiomaHablado = (form.get("idiomaHablado") as string) || undefined;
 
-    const transcript = textoDirecto ? textoDirecto : await transcribirAudio(audioFile as File);
+    const transcript = textoDirecto ? textoDirecto : await transcribirAudio(audioFile as File, idiomaHablado);
 
     const [respuestaTexto, analisis] = await Promise.all([
       generarRespuestaConversacional(perfil, transcript),
