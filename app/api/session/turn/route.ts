@@ -74,15 +74,20 @@ export async function POST(req: NextRequest) {
   try {
     const form = await req.formData();
     const audioFile = form.get("audio") as File | null;
+    const textoDirecto = form.get("textoDirecto") as string | null; // modo de prueba, sin Whisper
     const perfilRaw = form.get("perfil") as string | null;
     const voiceId = (form.get("voiceId") as string) || (process.env.ELEVENLABS_VOICE_ID_DEFAULT as string);
 
-    if (!audioFile || !perfilRaw) {
-      return NextResponse.json({ error: "Faltan 'audio' o 'perfil' en el form-data." }, { status: 400 });
+    if ((!audioFile && !textoDirecto) || !perfilRaw) {
+      return NextResponse.json(
+        { error: "Falta 'audio' o 'textoDirecto', y 'perfil' es obligatorio en el form-data." },
+        { status: 400 }
+      );
     }
 
     const perfil: PerfilAlumno = JSON.parse(perfilRaw);
-    const transcript = await transcribirAudio(audioFile);
+
+    const transcript = textoDirecto ? textoDirecto : await transcribirAudio(audioFile as File);
 
     const [respuestaTexto, analisis] = await Promise.all([
       generarRespuestaConversacional(perfil, transcript),
