@@ -59,13 +59,30 @@ STUDENT PROFILE
 STUDENT'S LAST TURN (transcribed)
 ${transcripcionTurno}
 
-Respond with ONLY this JSON object, nothing else:
+WHAT COUNTS AS A CORRECTION WORTH FLAGGING (flag these — do not skip them):
+- Wrong verb tense (e.g. "I have went" instead of "I went", "I have went" instead of
+  "I had gone") — ALWAYS flag this, even if it's the first time you've seen it.
+- Wrong irregular verb form (e.g. "I buyed" instead of "I bought", "I goed" instead of
+  "I went") — ALWAYS flag this.
+- Wrong word order, wrong preposition that changes meaning, subject-verb agreement errors,
+  wrong comparative/superlative forms.
+- Do NOT wait for an error to repeat before flagging it. "Recurring" in the profile just
+  means you should pay EXTRA attention if it matches something already on file — it does
+  NOT mean first-time errors should be ignored.
+
+WHAT TO SKIP (do not flag these):
+- Transcription artifacts that are probably just speech-to-text mistakes, not the
+  student's own error (e.g. a homophone swap that makes no grammatical sense in context).
+- Purely stylistic phrasing that is still grammatically correct.
+- Minor disfluencies, filler words ("um", "eh"), false starts.
+
+Respond with ONLY this JSON object, nothing else — no preamble, no markdown, no code fences:
 {
   "correccion": { "error_original": string, "version_correcta": string,
                   "explicacion_idioma_nativo": string, "categoria_error": string } | null,
   "palabra_nueva": { "palabra": string, "ipa": string, "traduccion": string,
                       "audio_disponible": boolean } | null
 }
-Only include a correccion if it's a genuinely useful teaching moment (structural or
-recurring, not every tiny slip). Explanations must be written in ${p.idiomaNativoNombre}.`;
+If there are multiple real errors, pick the single most important one. Explanations must
+be written in ${p.idiomaNativoNombre}.`;
 }

@@ -48,6 +48,15 @@ async function generarAnalisis(perfil: PerfilAlumno, transcript: string) {
   try {
     return JSON.parse(texto);
   } catch {
+    const match = texto.match(/\{[\s\S]*\}/);
+    if (match) {
+      try {
+        return JSON.parse(match[0]);
+      } catch {
+        // sigue sin parsear, caemos al fallback
+      }
+    }
+    console.error("[talqo] No se pudo parsear el JSON de analisis. Texto crudo:", texto);
     return { correccion: null, palabra_nueva: null };
   }
 }
