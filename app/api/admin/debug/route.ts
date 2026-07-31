@@ -18,16 +18,21 @@ export async function POST(req: NextRequest) {
 
     let comprobacion = null;
     if (perfilIdComprobar) {
-      const res = await pool.query("SELECT id FROM perfiles_idioma WHERE id = $1", [perfilIdComprobar]);
+      const resUuid = await pool.query("SELECT id FROM perfiles_idioma WHERE id = $1::uuid", [perfilIdComprobar]);
+      const resTexto = await pool.query("SELECT id FROM perfiles_idioma WHERE id::text = $1", [perfilIdComprobar]);
+      const resLike = await pool.query("SELECT id FROM perfiles_idioma WHERE id::text LIKE $1", [`%${perfilIdComprobar.slice(-8)}%`]);
       comprobacion = {
         valor_recibido: perfilIdComprobar,
         longitud: perfilIdComprobar.length,
         codigos_caracteres: Array.from(perfilIdComprobar).map((c: string) => c.charCodeAt(0)),
-        filas_encontradas: res.rowCount,
+        filas_encontradas_cast_uuid: resUuid.rowCount,
+        filas_encontradas_comparacion_texto: resTexto.rowCount,
+        filas_encontradas_like_ultimos8: resLike.rowCount,
       };
     }
 
     return NextResponse.json({
+      version_debug: "v2-cast-uuid",
       conexion: dbInfo.rows[0],
       total_perfiles: perfiles.rowCount,
       perfiles: perfiles.rows,
